@@ -1,7 +1,8 @@
-import pandas as pd
-import numpy as np
-import re
-import pyodbc
+import pandas as pd  # Create Data Frame (as excel tables)
+import numpy as np   # Evaluate types from pandas
+import re            # Evaluate Regular expressions
+import pyodbc        # Save informmation to Microsoft Access Data Base
+import pyproj        # Proj coordinates from planes to geographycs (lon, lat)
 
 
 def promaxdb2df(doc):
