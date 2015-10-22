@@ -3,6 +3,7 @@ import numpy as np   # Evaluate types from pandas
 import re            # Evaluate Regular expressions
 import pyodbc        # Save informmation to Microsoft Access Data Base
 import pyproj        # Proj coordinates from planes to geographycs (lon, lat)
+import os            # Manage directory and files path
 
 
 def promaxdb2df(doc):
@@ -278,7 +279,7 @@ def to_access(doc, df, tableName=None):
     fields = [c + ' ' + t for c, t, p in ctp]
     pk = [c for c, t, p in ctp if p == 'PRIMARY KEY']  # prim keys
     tableName = c[0] if not tableName else tableName
-    print('Table %s created in access' % tableName)
+    print('Inserting data of Table %s in access ...' % tableName)
 
     createTable(doc, fields, tableName)
     addPrimaryKeys(doc, pk, tableName)
@@ -290,6 +291,7 @@ def to_access(doc, df, tableName=None):
 
     sql_ins = "INSERT INTO %s(%s) VALUES (%s)" \
         % (tableName, ','.join(c), ','.join(['?']*len(c)))
+    print(sql_ins)
 
     for row in df.itertuples():
         try:
@@ -303,42 +305,37 @@ def to_access(doc, df, tableName=None):
     conn.close()
 
 
+def promaxcsvfiles(datafolder):
+    info = []
+    for dirname, dirnames, filenames in os.walk(datafolder):
+        for filename in filenames:
+            path = os.path.join(dirname, filename)
+            base, dom = os.path.split(path)
+            dom = os.path.splitext(dom)[0]
+            base, line = os.path.split(base)
+            base, area = os.path.split(base)
+            info = info + [[area, line, dom, path]]
+    return info
+
+
+def to_database(AREA, LINE, PROMAX_FILE, ACCESS_DATABASE_FILE):
+    # line = normNameLine(promax2meta(SIN_PROMAX_FILE, 'Line'))
+
+    dom = promaxdb2df(PROMAX_FILE)  # dom = cdp, sin or srf
+    addmeta(dom, ('LINE*', LINE), ('AREA*', AREA))
+    dom['LONGITUDE'], dom['LATITUDE'] = planesMagna2geo(
+         list(dom['X_COORD']), list(dom['Y_COORD']))
+
+    print(dom)
+    to_access(ACCESS_DATABASE_FILE, dom)
+
+
 def main():
     workfolder = 'C:\\Users\\Usuario9\\Desktop\\JOHN\\'
     ACCESS_DATABASE_FILE = workfolder + '1.ANH_SISMICA\\DOC_SISMICA\\GEODATABASE2.accdb'
-    datafolder = workfolder + '2.INSUMOS\\l-82-9600\\'
-    SIN_PROMAX_FILE = datafolder + 'l-82-9600-sin.a_db'
-    SRF_PROMAX_FILE = datafolder + 'l-82-9600-srf.a_db'
-    CDP_PROMAX_FILE = datafolder + 'l-82-9600-cdp.a_db'
-    # GEO_UKOOA_FILE = datafolder + '829700.geo'
-
-    line = normNameLine(promax2meta(SIN_PROMAX_FILE, 'Line'))
-    area = normNameArea(promax2meta(SIN_PROMAX_FILE, 'Area'))
-
-    cdp = promaxdb2df(CDP_PROMAX_FILE)
-    sin = promaxdb2df(SIN_PROMAX_FILE)
-    srf = promaxdb2df(SRF_PROMAX_FILE)
-    # geo = geo2df(GEO_UKOOA_FILE, 'SIN')
-
-    addmeta(cdp, ('LINE*', line), ('AREA*', area))
-    addmeta(sin, ('LINE*', line), ('AREA*', area))
-    addmeta(srf, ('LINE*', line), ('AREA*', area))
-    # addmeta(geo, ('LINE*', line), ('AREA*', area))
-
-    sin['LONGITUDE'], sin['LATITUDE'] = planesMagna2geo(
-        list(sin['X_COORD']), list(sin['Y_COORD']))
-    srf['LONGITUDE'], srf['LATITUDE'] = planesMagna2geo(
-        list(srf['X_COORD']), list(srf['Y_COORD']))
-    cdp['LONGITUDE'], cdp['LATITUDE'] = planesMagna2geo(
-        list(cdp['X_COORD']), list(cdp['Y_COORD']))
-
-    print(sin, srf, cdp)
-
-    to_access(ACCESS_DATABASE_FILE, cdp)
-    to_access(ACCESS_DATABASE_FILE, sin)
-    to_access(ACCESS_DATABASE_FILE, srf)
-    # to_access(ACCESS_DATABASE_FILE, geo)
-
+    datafolder = workfolder + '1.ANH_SISMICA\\DOC_SISMICA\\PROMAX_CSV'
+    for area, line, dom, path in promaxcsvfiles(datafolder):
+        to_database(area, line, path, ACCESS_DATABASE_FILE)
 
 if __name__ == "__main__":
     main()
