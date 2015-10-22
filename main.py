@@ -301,7 +301,6 @@ def to_access(doc, df, tableName=None):
 
     sql_ins = "INSERT INTO %s(%s) VALUES (%s)" \
         % (tableName, ','.join(c), ','.join(['?']*len(c)))
-    print(sql_ins)
 
     for row in df.itertuples():
         try:
@@ -336,7 +335,6 @@ def to_database(AREA, LINE, PROMAX_FILE, ACCESS_DATABASE_FILE):
     dom['LONGITUDE'], dom['LATITUDE'] = planesMagna2geo(
          list(dom['X_COORD']), list(dom['Y_COORD']))
 
-    print(dom)
     to_access(ACCESS_DATABASE_FILE, dom)
 
 
@@ -344,7 +342,10 @@ def main():
     workfolder = 'C:\\Users\\Usuario9\\Desktop\\JOHN\\'
     ACCESS_DATABASE_FILE = workfolder + '1.ANH_SISMICA\\DOC_SISMICA\\GEODATABASE2.accdb'
     datafolder = workfolder + '1.ANH_SISMICA\\DOC_SISMICA\\PROMAX_CSV'
-    for area, line, dom, path in promaxcsvfiles(datafolder):
+    info = promaxcsvfiles(datafolder)
+    for index, (area, line, dom, path) in enumerate(info):
+        print('[%.1f%%] [%s %s %s] [file no. %d of %d] ...'
+              % (index/len(info)*100, area, line, dom, index+1, len(info)))
         to_database(area, line, path, ACCESS_DATABASE_FILE)
 
 if __name__ == "__main__":
