@@ -17,6 +17,7 @@ def promaxdb2df(doc):
     """
     skiprows, header = _skiprows_header_before(doc, '<')
     names = header.split()
+    names = list(map(_correcth2Obug, names))
     names[0] = names[0] + '*'
     names = names + ['']
     df = pd.read_table(doc, delimiter='|', engine='python', skiprows=skiprows,
@@ -49,6 +50,15 @@ def _widths_skiprows(doc):
     w = [t-s for s, t in zip(w, w[1:])]             # Difference between values
     w[0] = w[0]+1                               # A space more to evit problems
     return w, skiprows
+
+
+def _correcth2Obug(name):
+    """
+    Frecuently H2O_DEP is written as H20_DEP, changing the letter O by number 0
+    This function correct this error and return H2O_DEP (letter O)
+    """
+    p = re.compile(r'H2[0oO]_DEP')
+    return p.sub('H2O_DEP', name)
 
 
 def geo2df(doc, source):
