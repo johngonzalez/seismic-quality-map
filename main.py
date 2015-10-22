@@ -154,6 +154,27 @@ def addmeta(df, *values):
             df[name] = value
 
 
+def planesMagna2geo(*planes):
+    """
+    Return tuple geographycs WGS84 coordinates:
+    (lat1, lat2, ...), (lon1, lon2, ...)
+    from magna Bogota planes Gauss-Kruger projection coordinates (x, y)
+
+    Arguments:
+    planes: Tuple coordinates (x1, x2, ...), (y1, y2, ...)
+    """
+    # Create instance of projection using EPSG:3116
+    # MAGNA-SIRGAS / Colombia Bogota zone
+    # (http://spatialreference.org/ref/epsg/3116/)
+    # Validated with (Augustin Codazzi, 2004, pag 56-65):
+    # http://www.igac.gov.co/wps/wcm/connect/91311780469f77c3aff6bf923ecdf8fe/aspectos+practicos.pdf?MOD=AJPERES
+    magna = pyproj.Proj('+proj=tmerc \
+        +lat_0=4.596200416666666 +lon_0=-74.07750791666666 \
+        +k=1 +x_0=1000000 +y_0=1000000 \
+        +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs')
+    return magna(*planes, inverse=True)
+
+
 def _chtype(x):
     if x == 'float64': return 'double'
     if x == 'int64': return 'int'
@@ -281,14 +302,15 @@ def to_access(doc, df, tableName=None):
     del cursor
     conn.close()
 
-if __name__ == "__main__":
+
+def main():
     workfolder = 'C:\\Users\\Usuario9\\Desktop\\JOHN\\'
-    ACCESS_DATABASE_FILE = workfolder + '1.ANH_SISMICA\\DOC_SISMICA\\GEODATABASE_Backup.accdb'
-    datafolder = workfolder + '2.INSUMOS\\'
-    SIN_PROMAX_FILE = datafolder + 'prusin.a_db.csv'
-    SRF_PROMAX_FILE = datafolder + 'prusrf.a_db.csv'
-    CDP_PROMAX_FILE = datafolder + 'pru.a_db.csv'
-    GEO_UKOOA_FILE = datafolder + '829700.geo'
+    ACCESS_DATABASE_FILE = workfolder + '1.ANH_SISMICA\\DOC_SISMICA\\GEODATABASE2.accdb'
+    datafolder = workfolder + '2.INSUMOS\\l-82-9600\\'
+    SIN_PROMAX_FILE = datafolder + 'l-82-9600-sin.a_db'
+    SRF_PROMAX_FILE = datafolder + 'l-82-9600-srf.a_db'
+    CDP_PROMAX_FILE = datafolder + 'l-82-9600-cdp.a_db'
+    # GEO_UKOOA_FILE = datafolder + '829700.geo'
 
     line = normNameLine(promax2meta(SIN_PROMAX_FILE, 'Line'))
     area = normNameArea(promax2meta(SIN_PROMAX_FILE, 'Area'))
@@ -296,17 +318,30 @@ if __name__ == "__main__":
     cdp = promaxdb2df(CDP_PROMAX_FILE)
     sin = promaxdb2df(SIN_PROMAX_FILE)
     srf = promaxdb2df(SRF_PROMAX_FILE)
-    geo = geo2df(GEO_UKOOA_FILE, 'SIN')
+    # geo = geo2df(GEO_UKOOA_FILE, 'SIN')
 
     addmeta(cdp, ('LINE*', line), ('AREA*', area))
     addmeta(sin, ('LINE*', line), ('AREA*', area))
     addmeta(srf, ('LINE*', line), ('AREA*', area))
-    addmeta(geo, ('LINE*', line), ('AREA*', area))
+    # addmeta(geo, ('LINE*', line), ('AREA*', area))
+
+    sin['LONGITUDE'], sin['LATITUDE'] = planesMagna2geo(
+        list(sin['X_COORD']), list(sin['Y_COORD']))
+    srf['LONGITUDE'], srf['LATITUDE'] = planesMagna2geo(
+        list(srf['X_COORD']), list(srf['Y_COORD']))
+    cdp['LONGITUDE'], cdp['LATITUDE'] = planesMagna2geo(
+        list(cdp['X_COORD']), list(cdp['Y_COORD']))
+
+    print(sin, srf, cdp)
 
     to_access(ACCESS_DATABASE_FILE, cdp)
     to_access(ACCESS_DATABASE_FILE, sin)
     to_access(ACCESS_DATABASE_FILE, srf)
-    to_access(ACCESS_DATABASE_FILE, geo)
+    # to_access(ACCESS_DATABASE_FILE, geo)
+
+
+if __name__ == "__main__":
+    main()
 
     # change point decimal by comma and Save to ascii
     # cdp.applymap(str).replace(r'\.', ',', regex=True).to_csv('csv', sep=';')
