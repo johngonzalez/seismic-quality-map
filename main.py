@@ -339,9 +339,9 @@ def to_database(AREA, LINE, PROMAX_FILE, ACCESS_DATABASE_FILE):
 
 
 def main():
-    workfolder = 'C:\\Users\\Usuario9\\Desktop\\JOHN\\'
-    ACCESS_DATABASE_FILE = workfolder + '1.ANH_SISMICA\\DOC_SISMICA\\GEODATABASE2.accdb'
-    datafolder = workfolder + '1.ANH_SISMICA\\DOC_SISMICA\\PROMAX_CSV'
+    workfolder = 'C:\\Users\\Usuario9\\Desktop\\JOHN\\1.ANH_SISMICA\\'
+    ACCESS_DATABASE_FILE = workfolder + 'DOC_SISMICA\\GEODATABASE2.mdb'
+    datafolder = workfolder + 'DOC_SISMICA\\PROMAX_CSV'
     info = promaxcsvfiles(datafolder)
     for index, (area, line, dom, path) in enumerate(info):
         print('[%.1f%%] [%s %s %s] [file no. %d of %d] ...'
@@ -350,6 +350,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-    # change point decimal by comma and Save to ascii
-    # cdp.applymap(str).replace(r'\.', ',', regex=True).to_csv('csv', sep=';')
